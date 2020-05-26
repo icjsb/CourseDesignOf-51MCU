@@ -1,0 +1,62 @@
+C51 COMPILER V9.57.0.0   DELAY                                                             05/26/2020 13:20:00 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE DELAY
+OBJECT MODULE PLACED IN .\Objects\delay.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE delay.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\del
+                    -ay.lst) TABS(2) OBJECT(.\Objects\delay.obj)
+
+line level    source
+
+   1          #include "delay.h"
+   2          
+   3          void delay_ms(unsigned char x)   //Îó²î -0.651041666667us
+   4          {
+   5   1          unsigned char a,b,c;
+   6   1        for(c=x;c>0;c--)
+   7   1          {
+   8   2          for(b=102;b>0;b--)
+   9   2              for(a=3;a>0;a--);
+  10   2        }
+  11   1      }
+  12          void delay_30us(void)   //Îó²î -0.703125us
+  13          {
+  14   1          unsigned char a;
+  15   1          for(a=12;a>0;a--);
+  16   1      }
+  17          
+  18          void delay_40us(void)   //Îó²î -0.703125us
+  19          {
+  20   1          unsigned char a,b;
+  21   1          for(b=3;b>0;b--)
+  22   1              for(a=4;a>0;a--);
+  23   1      }
+  24          
+  25          void delay ()
+  26          {
+  27   1       int x=99999;
+  28   1       while(x--);
+  29   1      }
+  30          
+  31          void Delay_Ms1(unsigned int ms)
+  32          {
+  33   1           unsigned int i;
+  34   1         do{
+  35   2              i = MAIN_Fosc / 96000; 
+  36   2            while(--i);   //96T per loop
+  37   2           }while(--ms);
+  38   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     70    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

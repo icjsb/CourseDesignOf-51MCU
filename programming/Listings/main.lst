@@ -1,0 +1,332 @@
+C51 COMPILER V9.57.0.0   MAIN                                                              05/26/2020 13:19:59 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "includes.h"
+   2          
+   3          int WD,SD;
+   4          bit flag = 0;          //1s定时标志
+   5          unsigned char T0RH = 0;  //T0重载值的高字节
+   6          unsigned char T0RL = 0;  //T0重载值的低字节
+   7          unsigned char TimeData[7]={50, 58, 12, 26, 5, 2, 20};
+   8          
+   9          unsigned char IntToString(unsigned char *str, int dat);
+  10          void ConfigTimer0(unsigned int ms);
+  11          sbit K1 = P2^3;
+  12          
+  13          /*====================================
+  14           IO接口定义
+  15          ====================================*/
+  16          sbit TSCLK = P1^0; //时钟
+  17          sbit TIO = P1^1;   //数据
+  18          sbit TRST = P1^2;  //使能
+  19          
+  20          
+  21          
+  22          /*=================================================
+  23          *函数名称：DS1302_W_Byte
+  24          *函数功能：DS1302写一字节数据
+  25          *输入：dat：要写入的数据
+  26          =================================================*/
+  27          void DS1302_W_Byte(unsigned char dat)
+  28          {
+  29   1        unsigned char i;
+  30   1        for(i = 0; i < 8; i++) //每次写1bit，写8次
+  31   1        {
+  32   2          TSCLK = 0;       //拉低时钟总线
+  33   2          TIO = dat & 0x01;  //从一字节最低位开始写
+  34   2          TSCLK = 1;       //拉高时钟总线，DS1302把数据读走
+  35   2          dat >>= 1;       //数据右移一位 
+  36   2        } 
+  37   1      }
+  38          /*=================================================
+  39          *函数名称：DS1302_R_Byte
+  40          *函数功能：DS1302读一字节
+  41          *输出：dat：读取的数据
+  42          =================================================*/
+  43          unsigned char DS1302_R_Byte()
+  44          {
+  45   1        unsigned char i, dat;
+  46   1        for(i = 0; i < 8; i++)  //每次写1bit，写8次
+  47   1        {
+  48   2          TSCLK = 0;      //拉低时钟总线，DS1302把数据放到数据总线上
+  49   2          dat >>= 1;      //数据右移一位，数据从最低位开始读 
+  50   2          if(TIO) dat |= 0x80;//读取数据
+  51   2          TSCLK = 1;      //拉高时钟总线
+  52   2        }
+  53   1        return dat;       //返回读取的数据
+  54   1      }
+C51 COMPILER V9.57.0.0   MAIN                                                              05/26/2020 13:19:59 PAGE 2   
+
+  55          /*=================================================
+  56          *函数名称：DS1302_W_DAT
+  57          *函数功能：写DS1302数据一次写2个字节
+  58          *说明：先写命令后写数据
+  59          *调用：DS1302_W_Byte()
+  60          *输入：cmd：需要写的命令 ，dat：需要些的数据
+  61          =================================================*/
+  62          void DS1302_W_DAT(unsigned char cmd, unsigned char dat)
+  63          {
+  64   1        TRST = 0;      //拉低使能端
+  65   1        TSCLK = 0;       //拉低数据总线
+  66   1        TRST = 1;      //拉高使能端，开始写数据
+  67   1        DS1302_W_Byte(cmd);  //写命令
+  68   1        DS1302_W_Byte(dat);  //写数据
+  69   1      }
+  70          /*=================================================
+  71          *函数名称：DS1302_R_DAT
+  72          *函数功能：读DS1302数据
+  73          *说明：先写入命令字节后读出对应数据
+  74          *调用： DS1302_W_Byte();DS1302_R_Byte();
+  75          *输入： cmd：需要写的命令
+  76          *输出： dat：读出的数据
+  77          =================================================*/
+  78          unsigned char DS1302_R_DAT(unsigned char cmd)
+  79          {
+  80   1        unsigned char dat;
+  81   1        TRST = 0;       //拉低使能端
+  82   1        TSCLK = 0;        //拉低数据总线
+  83   1        TRST = 1;       //拉高使能端，开始写数据
+  84   1        DS1302_W_Byte(cmd);   //写命令
+  85   1        dat = DS1302_R_Byte();  //读出数据
+  86   1        return dat;       //返回读出数据
+  87   1      }
+  88          
+  89          /*=================================================
+  90          *函数名称：DS1302_Clear_WP
+  91          *函数功能：清除DS1302写保护
+  92          *说明：先写入命令0x8e（写控制寄存器）接着向该寄存器写0
+  93          *调用：DS1302_W_DAT()
+  94          =================================================*/
+  95          void DS1302_Clear_WP()
+  96          {
+  97   1        DS1302_W_DAT(0x8e,0x00);  //把控制寄存器WP位置0
+  98   1      }
+  99          /*=================================================
+ 100          *函数名称：DS1302_Clear_WP
+ 101          *函数功能：设置DS1302写保护
+ 102          *说明：先写入命令0x8e（写控制寄存器）接着向该寄存器写0x80
+ 103          *调用：DS1302_W_DAT()
+ 104          =================================================*/
+ 105          void DS1302_Set_WP()
+ 106          { 
+ 107   1        DS1302_W_DAT(0x8e,0x80); //把控制寄存器WP位置1
+ 108   1        TRST = 0;        //拉低使能端
+ 109   1        TSCLK = 0;         //拉低数据总线
+ 110   1      } 
+ 111          /*=================================================
+ 112          *函数名称：Set_DS1302_Time
+ 113          *函数功能：设置DS1302时钟日历数据
+ 114          *说明：把时钟日历暂存数组TimeData数据转换为BCD码并
+ 115               写入到DS1302时钟日历寄存器中
+ 116          *调用：DS1302_Clear_WP();DS1302_W_DAT();DS1302_Set_WP();
+C51 COMPILER V9.57.0.0   MAIN                                                              05/26/2020 13:19:59 PAGE 3   
+
+ 117          *输入：addr:需要写入寄存器的地址 ，TimeData数组：时钟日历初始值
+ 118          =================================================*/
+ 119          void Set_DS1302_Time(unsigned char addr)
+ 120          {
+ 121   1        unsigned char i, j;
+ 122   1        DS1302_Clear_WP();    //清除写保护
+ 123   1        for(i = 0; i < 7; i++)  //写入7个字节的时钟初始值
+ 124   1        {
+ 125   2          j = TimeData[i]/10;  //BCD码转换
+ 126   2          TimeData[i] %= 10;   //BCD码转换
+ 127   2          TimeData[i] += j*16; //BCD码转换
+ 128   2          DS1302_W_DAT(addr, TimeData[i]); //先写DS1302时钟日历起始地址，再写数据
+ 129   2          addr += 2;   //时钟日历寄存器地址+2转向下一个寄存器
+ 130   2        }
+ 131   1        DS1302_Set_WP(); //开起写保护   
+ 132   1      }
+ 133          /*=================================================
+ 134          *函数名称：Read_DS1302_Time
+ 135          *函数功能：读取DS1302时钟数据
+ 136          *说明： 读取DS1302时钟数据 返回数据存入时钟日历暂存
+ 137              数组TimeData（数据格式BCD码）
+ 138          *调用：DS1302_Clear_WP();DS1302_R_DAT();DS1302_Set_WP();
+ 139          *输入： addr：需要读取时钟日历寄存器的起始地址
+ 140          =================================================*/
+ 141          void Read_DS1302_Time(unsigned char addr)
+ 142          {
+ 143   1        unsigned char i;
+ 144   1        DS1302_Clear_WP();      //清楚些保护
+ 145   1        for(i = 0; i < 7; i++)  //从DS1302读取7个字节的时钟日历数据
+ 146   1        {
+ 147   2          TimeData[i] = DS1302_R_DAT(addr);//先写入要读取数据的寄存器起始地址，再读出数据存入TimeData数组
+ 148   2          addr += 2;             //时钟日历寄存器地址+2转向下一个寄存器
+ 149   2        }
+ 150   1        DS1302_Set_WP();   //开起写保护
+ 151   1      } 
+ 152          
+ 153          
+ 154          void main()
+ 155          {
+ 156   1        bit tmp;
+ 157   1        unsigned char str[12];
+ 158   1        unsigned char str1[12];
+ 159   1        unsigned char DHT[5];
+ 160   1        
+ 161   1        EA = 1;
+ 162   1        ConfigTimer0(10);
+ 163   1        InitLcd1602();
+ 164   1        DHT_Start();
+ 165   1        Set_DS1302_Time(DS1302_W_ADDR); //先写入时钟日历寄存器起始地址再设置时钟日历初值
+ 166   1        
+ 167   1        delay();
+ 168   1        delay();
+ 169   1        delay();
+ 170   1        
+ 171   1        LcdShowStr(0,0,"WD");
+ 172   1        LcdShowStr(2,0,":");
+ 173   1        LcdShowStr(0,1,"SD");
+ 174   1        LcdShowStr(2,1,":");
+ 175   1        
+ 176   1        
+ 177   1        while(1)
+ 178   1        {   
+C51 COMPILER V9.57.0.0   MAIN                                                              05/26/2020 13:19:59 PAGE 4   
+
+ 179   2            Read_DS1302_Time(DS1302_R_ADDR);
+ 180   2            DHT_Start();
+ 181   2            tmp = DHT_ByteRead(&DHT);
+ 182   2            
+ 183   2            if(flag)
+ 184   2            {
+ 185   3              if(tmp == 1)
+ 186   3              {
+ 187   4                str[0] = (DHT[0]/10)%10 + '0';  //十位转为ASCII码
+ 188   4                str[1] = (DHT[0]%10) + '0';  //个位转为ASCII
+ 189   4                LcdShowStr(3, 1, str);
+ 190   4      
+ 191   4                str[0] = (DHT[2]/10)%10 + '0';  //十位转为ASCII码
+ 192   4                str[1] = (DHT[2]%10) + '0';  //个位转为ASCII
+ 193   4                str[2] = '\0';
+ 194   4                LcdShowStr(3,0, str);
+ 195   4      
+ 196   4                WD= DHT[2];
+ 197   4                SD=DHT[0];
+ 198   4              }
+ 199   3          str1[0] = TimeData[6]/16 + '0';
+ 200   3          str1[1] = TimeData[6]%16 + '0';
+ 201   3          LcdShowStr(6, 0, str1);
+ 202   3          LcdShowStr(8,0,"-");
+ 203   3          
+ 204   3          str1[0] = TimeData[4]/16 + '0';
+ 205   3          str1[1] = TimeData[4]%16 + '0';
+ 206   3          LcdShowStr(9, 0, str1);
+ 207   3          LcdShowStr(11,0,"-");
+ 208   3              
+ 209   3          str1[0] = TimeData[3]/16 + '0';
+ 210   3          str1[1] = TimeData[3]%16 + '0';
+ 211   3          LcdShowStr(12,0, str1);
+ 212   3          
+ 213   3          
+ 214   3          str1[0] = TimeData[2]/16 + '0';
+ 215   3          str1[1] = TimeData[2]%16 + '0';
+ 216   3          LcdShowStr(6,1, str1);
+ 217   3          LcdShowStr(8,1,":");
+ 218   3          
+ 219   3          str1[0] = TimeData[1]/16 + '0';
+ 220   3          str1[1] = TimeData[1]%16 + '0';
+ 221   3          LcdShowStr(9,1, str1);
+ 222   3          LcdShowStr(11,1,":");
+ 223   3          
+ 224   3          str1[0] = TimeData[0]/16 + '0';
+ 225   3          str1[1] = TimeData[0]%16 + '0';
+ 226   3          LcdShowStr(12,1, str1);
+ 227   3          
+ 228   3            }
+ 229   2              
+ 230   2          
+ 231   2        
+ 232   2          //Delay_Ms1(1000);  
+ 233   2              
+ 234   2      
+ 235   2          }
+ 236   1      
+ 237   1        
+ 238   1      }
+ 239          
+ 240          
+C51 COMPILER V9.57.0.0   MAIN                                                              05/26/2020 13:19:59 PAGE 5   
+
+ 241          void ConfigTimer0(unsigned int ms)
+ 242          {
+ 243   1        unsigned long tmp;  //临时变量
+ 244   1          
+ 245   1        tmp = 11059200 / 12;      //定时器计数频率
+ 246   1        tmp = (tmp * ms) / 1000;  //计算所需的计数值
+ 247   1        tmp = 65536 - tmp;        //计算定时器重载值
+ 248   1        tmp = tmp + 12;           //补偿中断响应延时造成的误差
+ 249   1        T0RH = (unsigned char)(tmp>>8);  //定时器重载值拆分为高低字节
+ 250   1        T0RL = (unsigned char)tmp;
+ 251   1        TMOD &= 0xF0;   //清零T0的控制位
+ 252   1        TMOD |= 0x01;   //配置T0为模式1
+ 253   1        TH0 = T0RH;     //加载T0重载值
+ 254   1        TL0 = T0RL;
+ 255   1        ET0 = 1;        //使能T0中断
+ 256   1        TR0 = 1;        //启动T0
+ 257   1      }
+ 258          
+ 259          unsigned char IntToString(unsigned char *str, int dat)
+ 260          {
+ 261   1          signed char i = 0;
+ 262   1          unsigned char len = 0;
+ 263   1          unsigned char buf[6];
+ 264   1          
+ 265   1          if (dat < 0)  //如果为负数，首先取绝对值，并在指针上添加负号
+ 266   1          {
+ 267   2              dat = -dat;
+ 268   2              *str++ = '-';
+ 269   2              len++;
+ 270   2          }
+ 271   1          do {          //先转换为低位在前的十进制数组
+ 272   2              buf[i++] = dat % 10;
+ 273   2              dat /= 10;
+ 274   2          } while (dat > 0);
+ 275   1          len += i;     //i最后的值就是有效字符的个数
+ 276   1          while (i-- > 0)   //将数组值转换为ASCII码反向拷贝到接收指针上
+ 277   1          {
+ 278   2              *str++ = buf[i] + '0';
+ 279   2          }
+ 280   1          *str = '\0';  //添加字符串结束符
+ 281   1          
+ 282   1          return len;   //返回字符串长度
+ 283   1      }
+ 284          
+ 285          void InterruptTimer0() interrupt 1
+ 286          {
+ 287   1          static unsigned char tmr1s = 0;
+ 288   1         
+ 289   1          TH0 = T0RH;  //重新加载重载值
+ 290   1          TL0 = T0RL;
+ 291   1          tmr1s++;
+ 292   1          if (tmr1s >= 10)  //定时1s
+ 293   1          {
+ 294   2            flag = 1;
+ 295   2            tmr1s = 0;
+ 296   2              
+ 297   2        }
+ 298   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    911    ----
+C51 COMPILER V9.57.0.0   MAIN                                                              05/26/2020 13:19:59 PAGE 6   
+
+   CONSTANT SIZE    =     10    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14      46
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

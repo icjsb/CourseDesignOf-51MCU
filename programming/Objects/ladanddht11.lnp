@@ -1,0 +1,7 @@
+".\Objects\1602.obj",
+".\Objects\main.obj",
+".\Objects\dht11.obj",
+".\Objects\delay.obj",
+".\Objects\configuration.obj" 
+TO ".\Objects\ladanddht11" 
+PRINT(".\Listings\ladanddht11.m51") RAMSIZE(256) 

@@ -1,0 +1,27 @@
+C51 COMPILER V9.57.0.0   CONFIGURATION                                                     05/26/2020 13:20:00 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE CONFIGURATION
+OBJECT MODULE PLACED IN .\Objects\configuration.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE configuration.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\List
+                    -ings\configuration.lst) TABS(2) OBJECT(.\Objects\configuration.obj)
+
+line level    source
+
+   1          #include "configuration.h"
+   2          
+   3          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

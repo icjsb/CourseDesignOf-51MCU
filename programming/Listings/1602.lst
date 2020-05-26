@@ -1,0 +1,116 @@
+C51 COMPILER V9.57.0.0   1602                                                              05/26/2020 13:19:59 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE 1602
+OBJECT MODULE PLACED IN .\Objects\1602.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE 1602.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\1602
+                    -.lst) TABS(2) OBJECT(.\Objects\1602.obj)
+
+line level    source
+
+   1          #include "1602.h"
+   2          
+   3          /* 等待液晶准备好 */
+   4          void LcdWaitReady()
+   5          {
+   6   1          unsigned char sta;
+   7   1          
+   8   1          LCD1602_DB = 0xFF;
+   9   1          LCD1602_RS = 0;
+  10   1          LCD1602_RW = 1;
+  11   1          do {
+  12   2              LCD1602_E = 1;
+  13   2              sta = LCD1602_DB; //读取状态字
+  14   2              LCD1602_E = 0;
+  15   2          } while (sta & 0x80); //bit7等于1表示液晶正忙，重复检测直到其等于0为止
+  16   1      }
+  17          /* 向LCD1602液晶写入一字节命令，cmd-待写入命令值 */
+  18          void LcdWriteCmd(unsigned char cmd)
+  19          {
+  20   1          LcdWaitReady();
+  21   1          LCD1602_RS = 0;
+  22   1          LCD1602_RW = 0;
+  23   1          LCD1602_DB = cmd;
+  24   1          LCD1602_E  = 1;
+  25   1          LCD1602_E  = 0;
+  26   1      }
+  27          /* 向LCD1602液晶写入一字节数据，dat-待写入数据值 */
+  28          void LcdWriteDat(unsigned char dat)
+  29          {
+  30   1          LcdWaitReady();
+  31   1          LCD1602_RS = 1;
+  32   1          LCD1602_RW = 0;
+  33   1          LCD1602_DB = dat;
+  34   1          LCD1602_E  = 1;
+  35   1          LCD1602_E  = 0;
+  36   1      }
+  37          /* 设置显示RAM起始地址，亦即光标位置，(x,y)-对应屏幕上的字符坐标 */
+  38          void LcdSetCursor(unsigned char x, unsigned char y)
+  39          {
+  40   1          unsigned char addr;
+  41   1          
+  42   1          if (y == 0)  //由输入的屏幕坐标计算显示RAM的地址
+  43   1              addr = 0x00 + x;  //第一行字符地址从0x00起始
+  44   1          else
+  45   1              addr = 0x40 + x;  //第二行字符地址从0x40起始
+  46   1          LcdWriteCmd(addr | 0x80);  //设置RAM地址
+  47   1      }
+  48          /* 在液晶上显示字符串，(x,y)-对应屏幕上的起始坐标，str-字符串指针 */
+  49          void LcdShowStr(unsigned char x, unsigned char y, unsigned char *str)
+  50          {
+  51   1          LcdSetCursor(x, y);   //设置起始地址
+  52   1          while (*str != '\0')  //连续写入字符串数据，直到检测到结束符
+  53   1          {
+  54   2              LcdWriteDat(*str++);
+C51 COMPILER V9.57.0.0   1602                                                              05/26/2020 13:19:59 PAGE 2   
+
+  55   2          }
+  56   1      }
+  57          /* 打开光标的闪烁效果 */
+  58          void LcdOpenCursor()
+  59          {
+  60   1        LcdWriteCmd(0x0F);
+  61   1      }
+  62          /* 关闭光标显示 */
+  63          void LcdCloseCursor()
+  64          {
+  65   1        LcdWriteCmd(0x0C);
+  66   1      }
+  67          /* 初始化1602液晶 */
+  68          void InitLcd1602()
+  69          {
+  70   1          LcdWriteCmd(0x38);  //16*2显示，5*7点阵，8位数据接口
+  71   1          LcdWriteCmd(0x0C);  //显示器开，光标关闭
+  72   1          LcdWriteCmd(0x06);  //文字不动，地址自动+1
+  73   1          LcdWriteCmd(0x01);  //清屏
+  74   1      }
+  75          
+  76          //*************************显示一个字节数据
+  77          void DisplayOneChar (unsigned char X,unsigned char Y,unsigned char DData)
+  78          {
+  79   1       if(Y) X|=0X40;   //Y=1显示第二行，Y=0显示第一行
+  80   1       X|=0X80;
+  81   1       LcdWriteCmd(X); //X用来选择哪一位
+  82   1       LcdWriteCmd(DData); //DData用来写数据
+  83   1      }
+  84          
+  85          //显示一个字节字符
+  86          void DisplayOneStr (unsigned char X,unsigned char Y,unsigned char DData)
+  87          {
+  88   1        DisplayOneChar (X++,Y,DData/16 + '0');
+  89   1        DisplayOneChar (X,Y,DData%16 + '0');
+  90   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    190    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
